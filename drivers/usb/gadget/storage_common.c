@@ -50,9 +50,12 @@
  */
 
 
+#include <linux/sysfs.h>
 #include <linux/usb/storage.h>
 #include <scsi/scsi.h>
 #include <asm/unaligned.h>
+
+#include "../../../fs/sysfs/sysfs.h"
 
 
 /*
@@ -783,6 +786,22 @@ static void store_cdrom_address(u8 *dest, int msf, u32 addr)
 /*-------------------------------------------------------------------------*/
 
 
+static void fsg_device_file_set_writeable(struct device *dev,
+					  struct device_attribute *attr,
+					  bool writeable)
+{
+	struct sysfs_dentry *sd = sysfs_get_dirent(dev->kobj.sd,
+						   NULL,
+						   attr->attr.name);
+	if (sd) {
+		if (writeable)
+			sd->s_mode |= 0200;
+		else
+			sd->s_mode &= ~0200;
+		sysfs_put_dirent(sd);
+	}
+}
+
 static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
 			   char *buf)
 {
@@ -891,12 +910,14 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
 	 * backing file is closed.
 	 */
 	down_read(filesem);
-	if (fsg_lun_is_open(curlun)) {
+	if (curlun->cdrom) {
+		rc = -EPERM;
+	} else if (fsg_lun_is_open(curlun)) {
 		LDBG(curlun, "read-only status change prevented\n");
 		rc = -EBUSY;
 	} else {
-		curlun->ro = ro;
-		curlun->initially_ro = ro;
+		curlun->ro = !!ro;
+		curlun->initially_ro = !!ro;
 		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
 		rc = count;
 	}
@@ -920,7 +941,7 @@ static ssize_t fsg_store_nofua(struct device *dev,
 	if (!nofua && curlun->nofua)
 		fsg_lun_fsync_sub(curlun);
 
-	curlun->nofua = nofua;
+	curlun->nofua = !!nofua;
 
 	return count;
 }
@@ -966,7 +987,7 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 }
 
 static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
+			       const char *buf, size_t count)
 {
 	ssize_t    rc;
 	struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
@@ -987,6 +1008,9 @@ static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr
 		rc = -EBUSY;
 	} else {
 		curlun->cdrom = cdrom;
+		if (cdrom)
+			curlun->ro = 1;
+		fsg_device_file_set_writeable(dev, &dev_attr_ro, !cdrom);
 		LDBG(curlun, "cdrom status set to %d\n", curlun->cdrom);
 		rc = count;
 	}

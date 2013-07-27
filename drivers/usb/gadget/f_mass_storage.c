@@ -2798,7 +2798,7 @@ static DEVICE_ATTR(perf, 0644, fsg_show_perf, fsg_store_perf);
 #endif
 
 static struct device_attribute dev_attr_ro_cdrom =
-	__ATTR(ro, 0444, fsg_show_ro, NULL);
+	__ATTR(ro, 0444, fsg_show_ro, fsg_store_ro);
 static struct device_attribute dev_attr_file_nonremovable =
 	__ATTR(file, 0444, fsg_show_file, NULL);
 

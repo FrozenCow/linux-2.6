@@ -3140,8 +3140,8 @@ static int fsg_main_thread(void *fsg_)
 
 
 /* The write permissions and store_xxx pointers are set in fsg_bind() */
-static DEVICE_ATTR(ro, 0444, fsg_show_ro, NULL);
-static DEVICE_ATTR(nofua, 0644, fsg_show_nofua, NULL);
+static DEVICE_ATTR(ro, 0444, fsg_show_ro, fsg_store_ro);
+static DEVICE_ATTR(nofua, 0644, fsg_show_nofua, fsg_store_nofua);
 static DEVICE_ATTR(file, 0444, fsg_show_file, NULL);
 
 
@@ -3354,7 +3354,6 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 		dev_attr_file.store = fsg_store_file;
 		if (!mod_data.cdrom) {
 			dev_attr_ro.attr.mode = 0644;
-			dev_attr_ro.store = fsg_store_ro;
 		}
 	}
 
