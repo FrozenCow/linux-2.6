@@ -24,10 +24,12 @@
  */
 
 
+#include <linux/sysfs.h>
 #include <linux/usb/storage.h>
 #include <scsi/scsi.h>
 #include <asm/unaligned.h>
 
+#include "../../../fs/sysfs/sysfs.h"
 
 /*
  * Thanks to NetChip Technologies for donating this product ID.
@@ -546,6 +548,9 @@ static void store_cdrom_address(u8 *dest, int msf, u32 addr)
 
 /*-------------------------------------------------------------------------*/
 
+static void fsg_device_file_set_writeable(struct device *dev,
+					  const char *name,
+					  bool writeable);
 
 static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
 			   char *buf)
@@ -618,7 +623,9 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
 	 * backing file is closed.
 	 */
 	down_read(filesem);
-	if (fsg_lun_is_open(curlun)) {
+	if (curlun->cdrom) {
+		rc = -EPERM;
+	} else if (fsg_lun_is_open(curlun)) {
 		LDBG(curlun, "read-only status change prevented\n");
 		rc = -EBUSY;
 	} else {
@@ -706,6 +713,9 @@ static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr
 		rc = -EBUSY;
 	} else {
 		curlun->cdrom = cdrom;
+		if (cdrom)
+			curlun->ro = 1;
+		fsg_device_file_set_writeable(dev, "ro", !cdrom);
 		LDBG(curlun, "cdrom status set to %d\n", curlun->cdrom);
 		rc = count;
 	}

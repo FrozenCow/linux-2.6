@@ -2584,7 +2584,7 @@ static DEVICE_ATTR(file, 0644, fsg_show_file, fsg_store_file);
 static DEVICE_ATTR(cdrom, 0644, fsg_show_cdrom, fsg_store_cdrom);
 
 static struct device_attribute dev_attr_ro_cdrom =
-	__ATTR(ro, 0444, fsg_show_ro, NULL);
+	__ATTR(ro, 0444, fsg_show_ro, fsg_store_ro);
 static struct device_attribute dev_attr_file_nonremovable =
 	__ATTR(file, 0444, fsg_show_file, NULL);
 
@@ -2863,6 +2863,23 @@ static void fsg_common_release(struct kref *ref)
 
 
 /*-------------------------------------------------------------------------*/
+
+static void fsg_device_file_set_writeable(struct device *dev,
+					  const char *name,
+					  bool writeable)
+{
+	struct sysfs_dirent *sd = sysfs_get_dirent(dev->kobj.sd,
+						   NULL,
+						   name);
+	if (WARN(!sd, "fsg %s sysfs file not found", name))
+		return;
+
+	if (writeable)
+		sd->s_mode |= 0200;
+	else
+		sd->s_mode &= ~0200;
+	sysfs_put(sd);
+}
 
 static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
 {
