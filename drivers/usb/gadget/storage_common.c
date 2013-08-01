@@ -785,22 +785,8 @@ static void store_cdrom_address(u8 *dest, int msf, u32 addr)
 
 /*-------------------------------------------------------------------------*/
 
-
-static void fsg_device_file_set_writeable(struct device *dev,
-					  struct device_attribute *attr,
-					  bool writeable)
-{
-	struct sysfs_dirent *sd = sysfs_get_dirent(dev->kobj.sd,
-						   NULL,
-						   attr->attr.name);
-	if (sd) {
-		if (writeable)
-			sd->s_mode |= 0200;
-		else
-			sd->s_mode &= ~0200;
-		sysfs_put(sd);
-	}
-}
+static void fsg_dev_attr_ro_set_writeable(struct device *dev,
+					  bool writeable);
 
 static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
 			   char *buf)
@@ -1010,7 +996,7 @@ static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr
 		curlun->cdrom = cdrom;
 		if (cdrom)
 			curlun->ro = 1;
-		fsg_device_file_set_writeable(dev, &dev_attr_ro, !cdrom);
+		fsg_dev_attr_ro_set_writeable(dev, !cdrom);
 		LDBG(curlun, "cdrom status set to %d\n", curlun->cdrom);
 		rc = count;
 	}
