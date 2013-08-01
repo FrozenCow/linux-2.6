@@ -790,7 +790,7 @@ static void fsg_device_file_set_writeable(struct device *dev,
 					  struct device_attribute *attr,
 					  bool writeable)
 {
-	struct sysfs_dentry *sd = sysfs_get_dirent(dev->kobj.sd,
+	struct sysfs_dirent *sd = sysfs_get_dirent(dev->kobj.sd,
 						   NULL,
 						   attr->attr.name);
 	if (sd) {
@@ -798,7 +798,7 @@ static void fsg_device_file_set_writeable(struct device *dev,
 			sd->s_mode |= 0200;
 		else
 			sd->s_mode &= ~0200;
-		sysfs_put_dirent(sd);
+		sysfs_put(sd);
 	}
 }
 
