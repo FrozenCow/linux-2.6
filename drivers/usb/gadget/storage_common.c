@@ -785,7 +785,8 @@ static void store_cdrom_address(u8 *dest, int msf, u32 addr)
 
 /*-------------------------------------------------------------------------*/
 
-static void fsg_dev_attr_ro_set_writeable(struct device *dev,
+static void fsg_device_file_set_writeable(struct device *dev,
+					  const char *name,
 					  bool writeable);
 
 static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
@@ -996,7 +997,7 @@ static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr
 		curlun->cdrom = cdrom;
 		if (cdrom)
 			curlun->ro = 1;
-		fsg_dev_attr_ro_set_writeable(dev, !cdrom);
+		fsg_device_file_set_writeable(dev, "ro", !cdrom);
 		LDBG(curlun, "cdrom status set to %d\n", curlun->cdrom);
 		rc = count;
 	}

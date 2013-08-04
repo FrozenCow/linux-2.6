@@ -3095,19 +3095,21 @@ static void fsg_common_release(struct kref *ref)
 
 /*-------------------------------------------------------------------------*/
 
-static void fsg_dev_attr_ro_set_writeable(struct device *dev,
+static void fsg_device_file_set_writeable(struct device *dev,
+					  const char *name,
 					  bool writeable)
 {
 	struct sysfs_dirent *sd = sysfs_get_dirent(dev->kobj.sd,
 						   NULL,
-						   dev_attr_ro.attr.name);
-	if (sd) {
-		if (writeable)
-			sd->s_mode |= 0200;
-		else
-			sd->s_mode &= ~0200;
-		sysfs_put(sd);
-	}
+						   name);
+	if (WARN(!sd, "fsg %s sysfs file not found", name))
+		return;
+
+	if (writeable)
+		sd->s_mode |= 0200;
+	else
+		sd->s_mode &= ~0200;
+	sysfs_put(sd);
 }
 
 static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
