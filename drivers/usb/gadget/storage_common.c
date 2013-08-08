@@ -610,8 +610,11 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
 	 * backing file is closed.
 	 */
 	down_read(filesem);
-	if (fsg_lun_is_open(curlun)) {
-		LDBG(curlun, "read-only status change prevented\n");
+	if (curlun->cdrom) {
+		LDBG(curlun, "read-only status change prevented: lun is a cdrom\n");
+		rc = -EPERM;
+	} else if (fsg_lun_is_open(curlun)) {
+		LDBG(curlun, "read-only status change prevented: lun is busy\n");
 		rc = -EBUSY;
 	} else {
 		curlun->ro = ro;
